@@ -1,20 +1,27 @@
 package org.narcissus.tf2statsbrowserextension.logstf;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class LogsTFAPI {
 
 //    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient();
+
+    ObjectMapper objectMapper = new ObjectMapper();
     private static StringBuilder search_api = new StringBuilder("https://logs.tf/api/v1/log?player=");
 
     private static StringBuilder data_api = new StringBuilder("https://logs.tf/json/");
     //"https://logs.tf/json/logid"
     private final Integer steamId32Bit;
-    private final Integer steamId64Bit;
+    private final Long steamId64Bit;
     private final long UNIQUE_OBJECT_ID = System.currentTimeMillis();
 
     //76561198106563151 =>
@@ -22,13 +29,13 @@ public class LogsTFAPI {
     // 0000100010111000010100100100111 =>
     // 73148711 (steamId32Bit)
 
-    private LogsTFAPI(Integer steamId64Bit) {
+    private LogsTFAPI(long steamId64Bit) {
         this.steamId64Bit = steamId64Bit;
-        String steamIdBinary = Integer.toBinaryString(steamId64Bit);
+        String steamIdBinary = Long.toBinaryString(steamId64Bit);
         this.steamId32Bit = Integer.parseInt(steamIdBinary.substring(25, steamIdBinary.length() - 1), 2);
     }
 
-    public static LogsTFAPI ofPlayer(Integer steamId64Bit) {
+    public static LogsTFAPI ofPlayer(long steamId64Bit) {
         return new LogsTFAPI(steamId64Bit);
     }
 
@@ -43,7 +50,17 @@ public class LogsTFAPI {
             throw new RuntimeException(e);
         }
 
-        return null;
+        try {
+            JsonNode jsonNode = objectMapper.readTree(result);
+            List<String> test = new ArrayList<>();
+            jsonNode.get("logs").elements().forEachRemaining(element -> test.add(element.elements().next().asText()));
+
+           objectMapper.readTree(result).path("parameters").asText();
+            //jsonNode.get("parameters").toString();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 
 
